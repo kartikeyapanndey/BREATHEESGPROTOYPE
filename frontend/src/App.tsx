@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import './index.css'
 
 function App() {
   const [currentView, setCurrentView] = useState<'upload' | 'dashboard'>('dashboard')
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   // A hardcoded tenant ID for the prototype
   const tenantId = '00000000-0000-0000-0000-000000000001'
@@ -26,6 +27,13 @@ function App() {
       fetchRecords()
     }
   }, [currentView])
+
+  const toggleRow = (id: string) => {
+    const newSet = new Set(expandedRows)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setExpandedRows(newSet)
+  }
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -174,63 +182,108 @@ function App() {
                     </tr>
                   )}
                   {records.map(r => (
-                    <tr key={r.id}>
-                      <td>
-                        {r.source_type}
-                        <br/>
-                        <small style={{color: 'var(--text-secondary)'}}>{r.file_name}</small>
-                      </td>
-                      <td>{r.category.replace('_', ' ')}</td>
-                      <td>{r.start_date || '-'}</td>
-                      <td>
-                        {r.status === 'PENDING_REVIEW' ? (
-                           <input 
-                              type="number" 
-                              defaultValue={r.quantity || ''} 
-                              id={`qty-${r.id}`}
-                              style={{ width: '80px', padding: '0.25rem' }}
-                           />
-                        ) : (
-                          r.quantity || '-'
-                        )}
-                      </td>
-                      <td>{r.unit || '-'}</td>
-                      <td>
-                        <span className={`status-badge status-${r.status.toLowerCase().replace('_review', '')}`}>
-                          {r.status}
-                        </span>
-                        {r.validation_errors && r.validation_errors.length > 0 && (
-                          <div style={{marginTop: '0.5rem'}}>
-                            {r.validation_errors.map((err: string, i: number) => (
-                              <div key={i} className="error-pill">⚠️ {err}</div>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        {r.status === 'PENDING_REVIEW' && (
-                          <div style={{display: 'flex', gap: '0.5rem'}}>
+                    <React.Fragment key={r.id}>
+                      <tr>
+                        <td>
+                          {r.source_type}
+                          <br/>
+                          <small style={{color: 'var(--text-secondary)'}}>{r.file_name}</small>
+                        </td>
+                        <td>{r.category.replace('_', ' ')}</td>
+                        <td>
+                          {r.start_date || '-'}
+                          <br/>
+                          <small style={{color: 'var(--text-secondary)'}}>Uploaded: {new Date(r.upload_date).toLocaleDateString()}</small>
+                        </td>
+                        <td>
+                          {r.status === 'PENDING_REVIEW' ? (
+                             <input 
+                                type="number" 
+                                defaultValue={r.quantity || ''} 
+                                id={`qty-${r.id}`}
+                                style={{ width: '80px', padding: '0.25rem' }}
+                             />
+                          ) : (
+                            r.quantity || '-'
+                          )}
+                        </td>
+                        <td>{r.unit || '-'}</td>
+                        <td>
+                          <span className={`status-badge status-${r.status.toLowerCase().replace('_review', '')}`}>
+                            {r.status}
+                          </span>
+                          {r.validation_errors && r.validation_errors.length > 0 && (
+                            <div style={{marginTop: '0.5rem'}}>
+                              {r.validation_errors.map((err: string, i: number) => (
+                                <div key={i} className="error-pill">⚠️ {err}</div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
+                            {r.status === 'PENDING_REVIEW' && (
+                              <>
+                                <button 
+                                  className="btn" 
+                                  style={{padding: '0.25rem 0.5rem'}}
+                                  onClick={() => {
+                                    const input = document.getElementById(`qty-${r.id}`) as HTMLInputElement;
+                                    handleApprove(r.id, input.value);
+                                  }}
+                                >
+                                  Approve
+                                </button>
+                                <button 
+                                  className="btn btn-danger" 
+                                  style={{padding: '0.25rem 0.5rem'}}
+                                  onClick={() => handleReject(r.id)}
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
                             <button 
-                              className="btn" 
+                              className="btn btn-secondary" 
                               style={{padding: '0.25rem 0.5rem'}}
-                              onClick={() => {
-                                const input = document.getElementById(`qty-${r.id}`) as HTMLInputElement;
-                                handleApprove(r.id, input.value);
-                              }}
+                              onClick={() => toggleRow(r.id)}
                             >
-                              Approve
-                            </button>
-                            <button 
-                              className="btn btn-danger" 
-                              style={{padding: '0.25rem 0.5rem'}}
-                              onClick={() => handleReject(r.id)}
-                            >
-                              Reject
+                              {expandedRows.has(r.id) ? 'Hide Info' : 'Show Info'}
                             </button>
                           </div>
-                        )}
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+                      {expandedRows.has(r.id) && (
+                        <tr style={{ background: 'rgba(0,0,0,0.2)' }}>
+                          <td colSpan={7} style={{ padding: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                              <div>
+                                <h4 style={{marginTop: 0, color: 'var(--text-secondary)'}}>Source of Truth (Raw Payload)</h4>
+                                <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '1rem', borderRadius: '8px', overflowX: 'auto', fontSize: '0.75rem', color: '#fff' }}>
+                                  {JSON.stringify(r.original_payload, null, 2)}
+                                </pre>
+                              </div>
+                              <div>
+                                <h4 style={{marginTop: 0, color: 'var(--text-secondary)'}}>Audit Trail</h4>
+                                {(!r.audit_trail || r.audit_trail.length === 0) ? (
+                                  <p style={{fontSize: '0.875rem'}}>No modifications yet.</p>
+                                ) : (
+                                  <ul style={{ paddingLeft: '1.5rem', fontSize: '0.875rem' }}>
+                                    {r.audit_trail.map((entry: any, i: number) => (
+                                      <li key={i} style={{marginBottom: '0.5rem'}}>
+                                        <strong>{new Date(entry.timestamp).toLocaleString()}</strong>
+                                        <br/>{entry.action}
+                                        {entry.quantity_changed && <><br/><span style={{color: 'var(--warning-color)'}}>Qty: {entry.quantity_changed}</span></>}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
