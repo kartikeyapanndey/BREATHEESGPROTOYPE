@@ -1,0 +1,29 @@
+{
+  "TripId": "T-98765",
+  "User": "analyst@breathe.com",
+  "StartDate": "2024-05-10T08:00:00Z",
+  "EndDate": "2024-05-12T18:00:00Z",
+  "Segments": [
+    {
+      "SegmentType": "Air",
+      "Vendor": "United Airlines",
+      "DepartureCode": "SFO",
+      "ArrivalCode": "JFK",
+      "ClassOfService": "Economy"
+    },
+    {
+      "SegmentType": "Hotel",
+      "Vendor": "Marriott",
+      "City": "New York",
+      "Nights": 2
+    },
+    {
+      "SegmentType": "Air",
+      "Vendor": "United Airlines",
+      "DepartureCode": "JFK",
+      "ArrivalCode": "SFO",
+      "Distance": 4150,
+      "ClassOfService": "Economy"
+    }
+  ]
+}

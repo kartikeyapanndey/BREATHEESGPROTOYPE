@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: breathe-esg-prototype
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "cd breathe_backend && gunicorn backend.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.0
